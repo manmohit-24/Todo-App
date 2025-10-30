@@ -2,12 +2,12 @@ import mongoose from "mongoose";
 import { logger } from "../utils/index.js";
 
 export const connectDB = async () => {
-    const DB_URI = process.env.MONGODB_URI;
+    const MONGODB_URI = process.env.MONGODB_URI;
     const DB_NAME = process.env.DB_NAME;
 
     try {
         const connectionInstance = await mongoose.connect(
-            `${DB_URI}/${DB_NAME}`,
+            `${MONGODB_URI}/${DB_NAME}`, 
         );
 
         logger.success(
