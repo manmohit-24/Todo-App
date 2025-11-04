@@ -1,20 +1,28 @@
 import express from "express";
 import { registerUser } from "./controllers/user.controller.js";
 import { logger } from "./utils/index.js";
+import { globalErrorHandler } from "./middlewares/errorHandler.js";
 
 const app = express();
 
-// Middleware for accepting json
+//* Middleware 
 app.use(express.json({ limit: "32kb" }));
 
-app.post("/register", (req, res) => {
-    console.log("Req : ", req.body);
+//*********** importing router **********
+import userRouter from "./routes/user.routes.js";
 
-    registerUser(req , res)
-        .catch((err) => {
-            logger.error( "Error /register" ,  err);
-            res.status(400).json(err);
-        });
-});
+
+//*********** router declaration ********
+app.use("/api/v1/users" , userRouter)
+
+
+
+
+
+
+
+
+//! this should be at the end to function properly
+app.use(globalErrorHandler);
 
 export { app };

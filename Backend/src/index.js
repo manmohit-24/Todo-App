@@ -9,13 +9,21 @@ dotenv.config({
 
 logger.seperator();
 
-// ******************** Connecting to DataBase ****************
-connectDB();
-
-// ******************* App : *********************
 const port = process.env.PORT;
 
-app.listen(port, () => {
+// ******************** Connecting to DataBase and app ****************
+connectDB()
+.then( () => {
+    app.listen(port, () => {
     logger.success("Express connected", `Running at port ${port}`);
-});
+    });
+})
+.catch((err) => {
+    console.log('APP CONNECTION FAILED' , err)
+ })
+
+
+
+
+
  

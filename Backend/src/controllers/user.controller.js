@@ -1,40 +1,107 @@
 import { User } from "../models/user.model.js";
 import { logger } from "../utils/logger.js";
+import { apiError } from "../utils/apiError.js";
+import { apiResponse } from "../utils/apiResponse.js";
 
-const registerUser = async (req, res) => {
-    const { email, name, username, password } = req.body;
+const registerUser = async (req, res, next) => {
+    try {
+        const { email, name, username, password } = req.body;
 
-    console.log(email, name, username, password);
+        if ([email, name, username, password].some((field) => !field)) {
+            throw new apiError(400, "all fields are req");
+        }
 
-    if (
-        !email?.trim() ||
-        !username?.trim() ||
-        !name?.trim() ||
-        !password?.trim()
-    ) {
-        return res.status(400).json({ error: "All fields are required" });
-    }
+        const existedUser = await User.findOne({
+            $or: [{ username }, { email }],
+        });
 
-    if (await User.findOne({ username })) {
-        return res
-            .status(400)
-            .json({ error: "User with the same username already exists" });
-    }
+        if (existedUser) {
+            throw new apiError(409, "user already exists");
+        }
 
-    if (await User.findOne({ email })) {
-        return res
-            .status(400)
-            .json({ error: "User with the same email already exists" });
-    }
-
-    res.status(200).json(
-        await User.create({
+        const user = await User.create({
             username,
             email,
-            name,
             password,
-        }),
-    );
+            name,
+        });
+
+        const createdUser = await User.findById(user._id).select("-password");
+
+        if (!createdUser) {
+            throw new apiError(500, "error while registering the user");
+        }
+
+        return res.status(201).json(new apiResponse(201, createdUser));
+    } 
+    catch (error) {
+        next(error);
+    }
 };
 
-export { registerUser };
+const loginUser = async (req, res, next) => {
+    try {
+        console.log(req.body);
+        const { username, email, password } = req.body;
+
+        if (!(username || email)) {
+            throw new apiError(400, "missing username or email");
+        }
+
+        if (!password) {
+            throw new apiError(400, "password is required");
+        }
+
+        const user = await User.findOne({
+            $or: [{ username }, { email }],
+        });
+
+        if (!user) {
+            throw new apiError(404, "user not found");
+        }
+
+        const validPassword = await user.isPasswordCorrect(password);
+        
+        if (!validPassword) {
+            throw new apiError(401, "please enter valid password ");
+        }
+
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
+
+        user.refreshToken = refreshToken;
+        await user.save({ validateBeforeSave: false });
+
+        const loggedInUser = await User.findById(user._id).select(
+            -"password",
+            -"refreshToken",
+        );
+
+        //* send cookies
+
+        const options = {
+            httponly: true,
+            secure: true,
+        };
+
+        return res
+            .status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", refreshToken, options)
+            .json(
+                new apiResponse(
+                    200,
+                    {
+                        user: loggedInUser,
+                        accessToken,
+                        refreshToken,
+                    },
+                    "user logged in successfully",
+                ),
+            );
+    } catch (error) {
+        next(error);
+    }
+};
+
+export { registerUser, loginUser };
