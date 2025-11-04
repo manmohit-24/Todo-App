@@ -2,11 +2,13 @@ import express from "express";
 import { registerUser } from "./controllers/user.controller.js";
 import { logger } from "./utils/index.js";
 import { globalErrorHandler } from "./middlewares/errorHandler.js";
+import cookieParser from "cookie-parser"
 
 const app = express();
 
 //* Middleware 
 app.use(express.json({ limit: "32kb" }));
+app.use(cookieParser());
 
 //*********** importing router **********
 import userRouter from "./routes/user.routes.js";

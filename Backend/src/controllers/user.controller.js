@@ -2,6 +2,7 @@ import { User } from "../models/user.model.js";
 import { logger } from "../utils/logger.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
+import { verifyJWT } from "../middlewares/authMiddleware.js";
 
 const registerUser = async (req, res, next) => {
     try {
@@ -79,7 +80,7 @@ const loginUser = async (req, res, next) => {
         //* send cookies
 
         const options = {
-            httponly: true,
+            httpOnly: true,
             secure: true,
         };
 
@@ -103,5 +104,26 @@ const loginUser = async (req, res, next) => {
     }
 };
 
+const logoutUser = async(req,res,next) => {
 
-export { registerUser, loginUser };
+   await User.findByIdAndUpdate(req.user._id,
+    {
+        $unset:{refreshToken : 1}
+    },
+    { 
+        new:true
+    })
+
+    const options = {
+        httpOnly:true,
+        secure:true
+    }
+
+    return res
+    .status(200)
+    .clearCookie("accessToken" , options)
+    .clearCookie("refreshToken" , options)
+    .json(new apiResponse(200, {} ,"user logged out successfully"))
+}
+
+export { registerUser, loginUser, logoutUser };
