@@ -106,24 +106,28 @@ const loginUser = async (req, res, next) => {
 
 const logoutUser = async(req,res,next) => {
 
-   await User.findByIdAndUpdate(req.user._id,
-    {
-        $unset:{refreshToken : 1}
-    },
-    { 
-        new:true
-    })
-
-    const options = {
-        httpOnly:true,
-        secure:true
-    }
-
-    return res
-    .status(200)
-    .clearCookie("accessToken" , options)
-    .clearCookie("refreshToken" , options)
-    .json(new apiResponse(200, {} ,"user logged out successfully"))
+   try {
+    await User.findByIdAndUpdate(req.user._id,
+     {
+         $unset:{refreshToken : 1}
+     },
+     { 
+         new:true
+     })
+ 
+     const options = {
+         httpOnly:true,
+         secure:true
+     }
+ 
+     return res
+     .status(200)
+     .clearCookie("accessToken" , options)
+     .clearCookie("refreshToken" , options)
+     .json(new apiResponse(200, {} ,"user logged out successfully"))
+   } catch (error) {
+        next(error);
+   }
 }
 
-export { registerUser, loginUser, logoutUser };
+export { registerUser, loginUser, logoutUser};
