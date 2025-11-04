@@ -73,8 +73,7 @@ const loginUser = async (req, res, next) => {
         await user.save({ validateBeforeSave: false });
 
         const loggedInUser = await User.findById(user._id).select(
-            -"password",
-            -"refreshToken",
+            -"password -refreshToken",
         );
 
         //* send cookies
@@ -103,5 +102,6 @@ const loginUser = async (req, res, next) => {
         next(error);
     }
 };
+
 
 export { registerUser, loginUser };

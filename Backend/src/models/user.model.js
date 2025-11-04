@@ -6,9 +6,10 @@ const user = new Schema(
     {
         name: {
             type: String,
-            unique: true, //? 
+            // unique: true,  //? no need to use this as unique
             required: true,
             trim: true,
+            lowercase:true
         },
         username: {
             type: String,
@@ -16,6 +17,7 @@ const user = new Schema(
             required: true,
             trim: true,
             index: true,
+            lowercase:true
         },
         email: {
             type: String,
@@ -23,6 +25,7 @@ const user = new Schema(
             required: true,
             trim: true,
             index: true,
+            lowercase:true
         },
         password: {
             type: String,
@@ -30,7 +33,7 @@ const user = new Schema(
             trim: true,
         },
         refreshToken: {
-            type: String ,
+            type: String 
         }
     },
     {
