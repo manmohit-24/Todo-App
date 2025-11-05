@@ -9,7 +9,7 @@ export const verifyJWT = async (req,res,next) => {
        
        if (!token) {
                throw new apiError(401, "Unauthorized request: No token provided");
-           }
+        }
        
        let decodedToken;
         try {
@@ -17,7 +17,7 @@ export const verifyJWT = async (req,res,next) => {
         } catch (jwtError) {
             // Normalize JWT errors to error format
             if (jwtError.name === 'TokenExpiredError') {
-                throw new apiError(401, "Token expired");
+                throw new apiError(401, "Token expired"); //using an old token with same secret key
             }
             throw new apiError(401, "Invalid token");  // All other JWT errors
         }

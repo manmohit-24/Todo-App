@@ -3,6 +3,7 @@ import { logger } from "../utils/logger.js";
 import { apiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { verifyJWT } from "../middlewares/authMiddleware.js";
+import jwt from "jsonwebtoken"
 
 const registerUser = async (req, res, next) => {
     try {
@@ -42,7 +43,6 @@ const registerUser = async (req, res, next) => {
 
 const loginUser = async (req, res, next) => {
     try {
-        console.log(req.body);
         const { username, email, password } = req.body;
 
         if (!(username || email)) {
@@ -106,6 +106,7 @@ const loginUser = async (req, res, next) => {
 
 const logoutUser = async(req,res,next) => {
 
+    //first it goes to verifyJWT
    try {
     await User.findByIdAndUpdate(req.user._id,
      {
@@ -128,6 +129,68 @@ const logoutUser = async(req,res,next) => {
    } catch (error) {
         next(error);
    }
-}
+};
 
-export { registerUser, loginUser, logoutUser};
+const refreshAccessToken = async (req, res, next) => {
+    try {
+        const incomingToken = req.cookies.refreshToken || req.body.refreshToken;
+
+        if (!incomingToken) {
+            throw new apiError(401, "Unauthorized request: No refresh token");
+        }
+
+        let decodedToken;
+        try {
+            decodedToken = jwt.verify(incomingToken, process.env.REFRESH_TOKEN_SECRET);
+
+        } catch (jwtError) {
+             if (jwtError.name === 'TokenExpiredError') {
+                throw new apiError(401, "Token expired"); //using an old token with same secret key
+            }
+            throw new apiError(401, "Invalid token");  // All other JWT errors
+        }         
+        
+        const user = await User.findById(decodedToken?._id);
+
+        if (!user) {
+            throw new apiError(404, "Invalid refresh token: User not found");
+        }
+
+        if (incomingToken !== user.refreshToken) {
+            throw new apiError(401, "Refresh token is expired or used");
+        }
+
+        const accessToken = user.generateAccessToken();
+        const newRefreshToken = user.generateRefreshToken();
+
+        
+        user.refreshToken = newRefreshToken;
+        await user.save({ validateBeforeSave: false });
+
+        const options = {
+            httpOnly: true,
+            secure: true,
+        };
+
+       
+        return res
+            .status(200)
+            .cookie("accessToken", accessToken, options)
+            .cookie("refreshToken", newRefreshToken, options)
+            .json(
+                new apiResponse(
+                    200,
+                    {
+                        accessToken,
+                        refreshToken: newRefreshToken,
+                    },
+                    "Access token refreshed"
+                )
+            );
+    } catch (error) {
+        
+        next(error);
+    }
+};
+
+export { registerUser, loginUser, logoutUser, refreshAccessToken};

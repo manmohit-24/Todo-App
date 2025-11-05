@@ -11,23 +11,6 @@ export const globalErrorHandler = (err, req, res, next) => {
         });
     }
 
-    // Handle JWT errors specifically
-    if (err.name === 'JsonWebTokenError') {
-        return res.status(401).json({
-            success: false,
-            message: "Invalid token",
-            errors: []
-        });
-    }
-    
-    if (err.name === 'TokenExpiredError') {
-        return res.status(401).json({
-            success: false,
-            message: "Token has expired",
-            errors: []
-        });
-    }
-    
     //if unhandled error then -  
     console.error("UNHANDLED ERROR:", err.stack); // Log the real error
     return res.status(500).json({
