@@ -74,7 +74,7 @@ const loginUser = async (req, res, next) => {
         await user.save({ validateBeforeSave: false });
 
         const loggedInUser = await User.findById(user._id).select(
-            "-password -refreshToken",
+            -"password -refreshToken",
         );
 
         //* send cookies
@@ -87,13 +87,14 @@ const loginUser = async (req, res, next) => {
         return res
             .status(200)
             .cookie("accessToken", accessToken, options)
-            .cookie("refreshToken",refreshToken,options)
+            .cookie("refreshToken", refreshToken, options)
             .json(
                 new apiResponse(
                     200,
                     {
                         user: loggedInUser,
                         accessToken,
+                        refreshToken,
                     },
                     "user logged in successfully",
                 ),
@@ -181,6 +182,7 @@ const refreshAccessToken = async (req, res, next) => {
                     200,
                     {
                         accessToken,
+                        refreshToken: newRefreshToken,
                     },
                     "Access token refreshed"
                 )
@@ -235,7 +237,6 @@ const changeCurrentPassword = async (req,res,next) => {
 
         return res.status(200)
         .clearCookie("accessToken",options)
-        .clearCookie("refreshToken",options)
         .json(
             new apiResponse(200,{},"password changed successfully")
         )
@@ -243,87 +244,8 @@ const changeCurrentPassword = async (req,res,next) => {
     } catch (error) {
         next(error);
     }
-} 
+}
 
-const updateAccountDetails = async (req, res, next) => {
-    try {
-        let { name, email } = req.body;
-        
-        if (!name && !email) {
-            throw new apiError(400, "One field is required");
-        }
-        
-        const user = await User.findById(req.user._id);
-        
-        let emailChanged = false;
-        
-        if (name) {
-            if (name === user.name) {
-                throw new apiError(400, "New name cannot be same");
-            }
-            user.name = name;
-        }
-        
-        if (email) {
-            email = email.trim().toLowerCase();
-            if (email === user.email) {
-                throw new apiError(400, "New email cannot be same");
-            }
-            
-            // Proactive check
-            const emailExists = await User.findOne({
-                email: email,
-                _id: { $ne: user._id }
-            });
-            
-            if (emailExists) {
-                throw new apiError(409, "Email already in use");
-            }
-            
-            user.email = email;  
-            emailChanged = true;
-        }
-        
-        if(emailChanged) {
-            user.refreshToken = undefined;
-        }
-        // ONE save for everything!
-        await user.save();
-        
-        const options = {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production'
-        };
 
-        if (emailChanged) {
-            return res
-                .status(200)
-                .clearCookie("accessToken", options)
-                .json(new apiResponse(200, {}, "Please login again"));
-        }
-        
-        const userResponse = {
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            username: user.username,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt
-        };
-        
-        return res.status(200).json(
-            new apiResponse(200, userResponse, "Updated successfully")
-        );
-        
-    } catch (error) {
-        // Better error detection
-        if (error.code === 11000) {
-            console.log("Duplicate key:", error.keyPattern, error.keyValue);
-            return next(new apiError(409, "Duplicate value"));
-        }
-        
-        next(error);
-    }
-};
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken, getUserProfile,changeCurrentPassword, updateAccountDetails};
+export { registerUser, loginUser, logoutUser, refreshAccessToken, getUserProfile,changeCurrentPassword};
