@@ -206,7 +206,7 @@ const getUserProfile = async (req,res,next) => {
 const changeCurrentPassword = async (req,res,next) => {
 
     try {
-        const user = await User.findById(req.user?._id)
+        const user = await User.findById(req.user?._id).select("+password");
 
         const {oldPassword , newPassword} = req.body;
         
