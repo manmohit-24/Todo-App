@@ -87,6 +87,7 @@ const loginUser = async (req, res, next) => {
         return res
             .status(200)
             .cookie("accessToken", accessToken, options)
+            .cookie("refreshTOken",refreshToken,options)
             .json(
                 new apiResponse(
                     200,
@@ -127,7 +128,7 @@ const logoutUser = async(req,res,next) => {
    } catch (error) {
         next(error);
    }
-};//!
+};
 
 const refreshAccessToken = async (req, res, next) => {
     try {
@@ -180,7 +181,6 @@ const refreshAccessToken = async (req, res, next) => {
                     200,
                     {
                         accessToken,
-                        refreshToken: newRefreshToken,
                     },
                     "Access token refreshed"
                 )
@@ -189,7 +189,7 @@ const refreshAccessToken = async (req, res, next) => {
         
         next(error);
     }
-}; //! 
+};
 
 const getUserProfile = async (req,res,next) => {
 
@@ -204,7 +204,7 @@ const getUserProfile = async (req,res,next) => {
 const changeCurrentPassword = async (req,res,next) => {
 
     try {
-        const user = await User.findById(req.user?._id).select("+password");
+        const user = await User.findById(req.user?._id)
 
         const {oldPassword , newPassword} = req.body;
         
@@ -243,7 +243,7 @@ const changeCurrentPassword = async (req,res,next) => {
     } catch (error) {
         next(error);
     }
-} //!  
+} 
 
 const updateAccountDetails = async (req, res, next) => {
     try {
